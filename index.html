@@ -49,51 +49,64 @@
         </div>
     </div>
 
-    <script>
-        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR4nTO5eB8-EVq9RmGZNz-5gkCjY_lZQSFnq5N7Okne8CNgH7z1hnEj9OqoL_tk3C2kxj-zwIfQVrUD/pub?output=csv';
-        const PROXY_URL = 'https://corsproxy.io/?' + encodeURIComponent(SHEET_URL);
+<script>
+    // 1. Ensure this link is exactly the "Publish to Web" CSV link from your sheet
+    const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR4nTO5eB8-EVq9RmGZNz-5gkCjY_lZQSFnq5N7Okne8CNgH7z1hnEj9OqoL_tk3C2kxj-zwIfQVrUD/pub?output=csv';
+    
+    // 2. Switched to a more reliable GitHub-friendly proxy
+    const PROXY_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(SHEET_URL);
 
-        function init() {
-            Papa.parse(PROXY_URL, {
-                download: true,
-                header: false,
-                skipEmptyLines: true,
-                complete: (results) => {
-                    // Skip the header row (Row 1)
+    function init() {
+        const status = document.getElementById('status-text');
+        
+        Papa.parse(PROXY_URL, {
+            download: true,
+            header: false,
+            skipEmptyLines: true,
+            complete: (results) => {
+                if (results.data && results.data.length > 1) {
                     const dataRows = results.data.slice(1); 
                     renderTable(dataRows);
+                    status.innerText = "LIVE // SYNCED";
+                } else {
+                    status.innerText = "ERROR: SHEET DATA EMPTY";
                 }
-            });
-        }
+            },
+            error: (err) => {
+                console.error("PapaParse Error:", err);
+                status.innerText = "ERROR: " + err;
+            }
+        });
+    }
 
-        function renderTable(rows) {
-            const lbBody = document.getElementById('leaderboard-body');
-            document.getElementById('status-text').innerText = "LIVE // DATA SYNCED";
-            
-            lbBody.innerHTML = rows.map(row => {
-                // Mapping exactly to the visual order of your Google Sheet columns
-                return `
-                    <tr>
-                        <td class="font-bold text-gray-500">${row[0] || ''}</td>
-                        <td class="font-bold uppercase text-white">${row[1] || 'Unknown'}</td>
-                        <td>${row[2] || '0'}</td>
-                        <td>${row[3] || '0'}</td>
-                        <td class="accent font-bold">${row[4] || '0.00'}</td>
-                        <td class="text-green-500 font-semibold">${row[5] || '0'}</td>
-                        <td class="text-red-500 font-semibold">${row[6] || '0'}</td>
-                        <td>${row[7] || '0%'}</td>
-                        <td class="text-gray-400 font-mono">${row[8] || '0'}</td>
-                        <td>${row[9] || '0'}</td>
-                        <td>${row[10] || '0'}</td>
-                        <td class="${row[11] > 0 ? 'text-yellow-500 font-bold' : 'text-gray-600'}">${row[11] || '0'}</td>
-                        <td class="font-bold text-blue-400 italic">${row[12] || '0'}</td>
-                    </tr>
-                `;
-            }).join('');
-        }
+    function renderTable(rows) {
+        const lbBody = document.getElementById('leaderboard-body');
+        
+        // Filtering out rows that don't have an IGN (Column B) to prevent empty rows
+        lbBody.innerHTML = rows.filter(row => row[1]).map(row => {
+            return `
+                <tr>
+                    <td class="font-bold text-gray-500">${row[0] || ''}</td>
+                    <td class="font-bold uppercase text-white">${row[1] || ''}</td>
+                    <td>${row[2] || '0'}</td>
+                    <td>${row[3] || '0'}</td>
+                    <td class="accent font-bold">${row[4] || '0.00'}</td>
+                    <td class="text-green-500 font-semibold">${row[5] || '0'}</td>
+                    <td class="text-red-500 font-semibold">${row[6] || '0'}</td>
+                    <td>${row[7] || '0%'}</td>
+                    <td class="text-gray-400 font-mono">${row[8] || '0'}</td>
+                    <td>${row[9] || '0'}</td>
+                    <td>${row[10] || '0'}</td>
+                    <td class="${row[11] > 0 ? 'text-yellow-500 font-bold' : 'text-gray-600'}">${row[11] || '0'}</td>
+                    <td class="font-bold text-blue-400 italic">${row[12] || '0'}</td>
+                </tr>
+            `;
+        }).join('');
+    }
 
-        init();
-        setInterval(init, 30000); // Refresh every 30 seconds
-    </script>
-</body>
-</html>
+    // Run immediately
+    init();
+    // Auto-refresh every 60 seconds
+    setInterval(init, 60000);
+</script>
+
