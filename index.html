@@ -5,36 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Valorant Customs Leaderboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-        body { background-color: #0a0a0c; color: #ffffff; font-family: 'Plus Jakarta Sans', sans-serif; }
-        .glass { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; }
+        body { background-color: #0a0a0c; color: #ffffff; font-family: 'Plus Jakarta Sans', sans-serif; font-size: 16px; }
+        .glass { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 16px; }
         .accent { color: #ff4655; }
-        th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #666; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.02); font-size: 13px; }
-        tr:hover { background: rgba(255, 70, 85, 0.05); }
-        
-        /* Loading Screen Animation */
+        th { font-size: 14px; text-transform: uppercase; color: #666; padding: 20px; border-bottom: 2px solid rgba(255,255,255,0.05); }
+        td { padding: 20px; border-bottom: 1px solid rgba(255,255,255,0.02); font-size: 18px; }
+        tr:hover { background: rgba(255, 70, 85, 0.08); }
         #loading-screen { transition: opacity 0.5s ease-out; }
     </style>
 </head>
-<body class="p-4 md:p-8">
+<body class="p-6 md:p-12">
 
     <div id="loading-screen" class="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-[#0a0a0c]">
-        <div class="relative w-20 h-20 mb-6">
+        <div class="relative w-24 h-24 mb-8">
             <div class="absolute inset-0 border-4 border-[#ff4655] animate-ping opacity-20"></div>
-            <div class="absolute inset-0 border-2 border-[#ff4655] rotate-45 animate-[spin_3s_linear_infinite]"></div>
-            <div class="absolute inset-4 bg-[#ff4655] rotate-45 shadow-[0_0_20px_#ff4655]"></div>
+            <div class="absolute inset-0 border-4 border-[#ff4655] rotate-45 animate-[spin_3s_linear_infinite]"></div>
+            <div class="absolute inset-6 bg-[#ff4655] rotate-45 shadow-[0_0_30px_#ff4655]"></div>
         </div>
-        <h2 class="text-xl font-black italic tracking-[0.3em] uppercase text-white animate-pulse">Establishing Connection</h2>
-        <p class="text-[10px] text-gray-500 font-mono mt-2 tracking-widest uppercase">Syncing Leaderboard Data...</p>
+        <h2 class="text-2xl font-black italic tracking-[0.4em] uppercase text-white animate-pulse">Establishing Connection</h2>
+        <p class="text-xs text-gray-500 font-mono mt-4 tracking-widest uppercase">Fetching Live API Data...</p>
     </div>
 
-    <div id="dashboard-content" class="max-w-[1400px] mx-auto opacity-0 transition-opacity duration-700">
-        <header class="mb-8">
-            <h1 class="text-3xl font-extrabold italic uppercase tracking-tighter text-white">Customs <span class="accent">Leaderboard</span></h1>
-            <p id="status-text" class="text-gray-500 font-mono text-[10px] mt-1 uppercase tracking-widest">Syncing with Google Sheets...</p>
+    <div id="dashboard-content" class="max-w-[1600px] mx-auto opacity-0 transition-opacity duration-700">
+        <header class="mb-12">
+            <h1 class="text-5xl font-extrabold italic uppercase tracking-tighter text-white">Customs <span class="accent">Leaderboard</span></h1>
+            <p id="status-text" class="text-gray-500 font-mono text-sm mt-2 uppercase tracking-widest">Initialising Instant Sync...</p>
         </header>
 
         <div class="overflow-x-auto glass">
@@ -62,37 +59,36 @@
     </div>
 
 <script>
-    const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR4nTO5eB8-EVq9RmGZNz-5gkCjY_lZQSFnq5N7Okne8CNgH7z1hnEj9OqoL_tk3C2kxj-zwIfQVrUD/pub?output=csv';
-    const PROXY_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(SHEET_URL + '&cache=' + Math.random());
+    // 1. YOUR SETUP
+    const API_KEY = 'AIzaSyBZ6oTJCJUSxCsz_3fbi7lNo-2OP4Y5IDk';
+    const SHEET_ID = '1ALv-N6o8GQ9qvcHR-xKPqaQYEXyqJsItkx2EheCcykc';
+    const RANGE = 'Leaderboard!A2:M100';
 
-    function init() {
+    async function init() {
         const status = document.getElementById('status-text');
-        
-        Papa.parse(PROXY_URL, {
-            download: true,
-            header: false,
-            skipEmptyLines: true,
-            complete: (results) => {
-                if (results.data && results.data.length > 1) {
-                    const dataRows = results.data.slice(1); 
-                    renderTable(dataRows);
-                    status.innerText = "LIVE // SYNCED";
-                    hideLoader(); // NEW: Trigger hide once data is ready
-                } else {
-                    status.innerText = "ERROR: SHEET DATA EMPTY";
-                }
-            },
-            error: (err) => {
-                console.error("PapaParse Error:", err);
-                status.innerText = "ERROR: " + err;
+        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+
+        try {
+            const response = await fetch(url);
+            const data = await response.json();
+
+            if (data.values && data.values.length > 0) {
+                renderTable(data.values);
+                status.innerText = "LIVE // INSTANT API SYNC";
+                hideLoader();
+            } else {
+                status.innerText = "ERROR: NO DATA FOUND IN RANGE";
             }
-        });
+        } catch (err) {
+            console.error("API Error:", err);
+            status.innerText = "API CONNECTION FAILED";
+        }
     }
 
-    // NEW: Function to fade out the loader and fade in the table
     function hideLoader() {
         const loader = document.getElementById('loading-screen');
         const content = document.getElementById('dashboard-content');
+        if (!loader) return;
         
         loader.style.opacity = '0';
         setTimeout(() => {
@@ -107,18 +103,18 @@
         lbBody.innerHTML = rows.filter(row => row[1]).map(row => {
             return `
                 <tr>
-                    <td class="font-bold text-gray-500">${row[0] || ''}</td>
-                    <td class="font-bold uppercase text-white">${row[1] || ''}</td>
+                    <td class="font-bold text-gray-500 italic">${row[0] || ''}</td>
+                    <td class="font-bold uppercase text-white text-xl">${row[1] || ''}</td>
                     <td>${row[2] || '0'}</td>
                     <td>${row[3] || '0'}</td>
-                    <td class="accent font-bold">${row[4] || '0.00'}</td>
-                    <td class="text-green-500 font-semibold">${row[5] || '0'}</td>
-                    <td class="text-red-500 font-semibold">${row[6] || '0'}</td>
+                    <td class="accent font-black italic text-2xl">${row[4] || '0.00'}</td>
+                    <td class="text-green-500 font-bold">${row[5] || '0'}</td>
+                    <td class="text-red-500 font-bold">${row[6] || '0'}</td>
                     <td>${row[7] || '0%'}</td>
-                    <td class="text-gray-400 font-mono">${row[8] || '0'}</td>
+                    <td class="text-gray-400 font-mono text-base">${row[8] || '0'}</td>
                     <td>${row[9] || '0'}</td>
                     <td>${row[10] || '0'}</td>
-                    <td class="${row[11] > 0 ? 'text-yellow-500 font-bold' : 'text-gray-600'}">${row[11] || '0'}</td>
+                    <td class="${row[11] > 0 ? 'text-yellow-500 font-bold' : 'text-gray-700'}">${row[11] || '0'}</td>
                     <td class="font-bold text-blue-400 italic">${row[12] || '0'}</td>
                 </tr>
             `;
@@ -126,7 +122,8 @@
     }
 
     init();
-    setInterval(init, 60000);
+    // Refresh every 15 seconds (highly responsive, stay under API quotas)
+    setInterval(init, 15000);
 </script>
 </body>
 </html>
