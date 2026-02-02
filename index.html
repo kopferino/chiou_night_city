@@ -59,71 +59,126 @@
     </div>
 
 <script>
-    // 1. YOUR SETUP
-    const API_KEY = 'AIzaSyBZ6oTJCJUSxCsz_3fbi7lNo-2OP4Y5IDk';
-    const SHEET_ID = '1ALv-N6o8GQ9qvcHR-xKPqaQYEXyqJsItkx2EheCcykc';
-    const RANGE = 'Leaderboard!A2:M100';
+// 1. CONFIGURATION (Declared only ONCE to avoid SyntaxError)
+const API_KEY = 'AIzaSyBZ6oTJCJUSxCsz_3fbi7lNo-2OP4Y5IDk'; 
+const SHEET_ID = '1ALv-N6o8GQ9qvcHR-xKPqaQYEXyqJsItkx2EheCcykc';
+const RANGE = "'Leaderboard'!A2:M100"; 
 
-    async function init() {
-        const status = document.getElementById('status-text');
-        const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${RANGE}?key=${API_KEY}`;
+async function init() {
+    const status = document.getElementById('status-text');
+    // encodeURIComponent fixes the 400 error by handling the '!' and quotes correctly
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(RANGE)}?key=${API_KEY}`;
 
-        try {
-            const response = await fetch(url);
-            const data = await response.json();
+    try {
+        const response = await fetch(url);
+        const data = await response.json();
 
-            if (data.values && data.values.length > 0) {
-                renderTable(data.values);
-                status.innerText = "LIVE // INSTANT API SYNC";
-                hideLoader();
-            } else {
-                status.innerText = "ERROR: NO DATA FOUND IN RANGE";
-            }
-        } catch (err) {
-            console.error("API Error:", err);
-            status.innerText = "API CONNECTION FAILED";
+        if (data.error) {
+            console.error("API Error:", data.error.message);
+            status.innerText = "API ERROR: " + data.error.status;
+            return;
         }
+
+        if (data.values && data.values.length > 0) {
+            renderTable(data.values);
+            status.innerText = "LIVE // INSTANT API SYNC";
+            hideLoader();
+        }
+    } catch (err) {
+        console.error("Connection Error:", err);
+        status.innerText = "API CONNECTION FAILED";
+    }
+}
+
+function renderTable(rows) {
+    const lbBody = document.getElementById('leaderboard-body');
+    
+    // Safety check: Filter out rows that don't have a player name
+    const activeRows = rows.filter(row => row[1] && row[1].toString().trim() !== "");
+
+    const ranked = [];
+    const unranked = [];
+
+    activeRows.forEach(row => {
+        // Safety check: row[0] might be undefined in empty cells
+        const rankValue = row[0] ? row[0].toString() : "";
+        if (rankValue.includes('?')) {
+            unranked.push(row);
+        } else {
+            ranked.push(row);
+        }
+    });
+
+    // Sort by KD Ratio (Index 4)
+    ranked.sort((a, b) => (parseFloat(b[4]) || 0) - (parseFloat(a[4]) || 0));
+
+    // Safety function to get numbers from potentially empty cells
+    const getNum = (row, idx) => parseFloat(row[idx]) || 0;
+    const getPct = (row, idx) => parseFloat(row[idx] ? row[idx].toString().replace('%','') : 0) || 0;
+
+    // Calculate High Scores for glowing
+    const topStats = {
+        kills: Math.max(...activeRows.map(r => getNum(r, 2))),
+        kd: Math.max(...activeRows.map(r => getNum(r, 4))),
+        wins: Math.max(...activeRows.map(r => getNum(r, 5))),
+        wr: Math.max(...activeRows.map(r => getPct(r, 7))),
+        gp: Math.max(...activeRows.map(r => getNum(r, 8))),
+        avgK: Math.max(...activeRows.map(r => getNum(r, 9))),
+        avgD: Math.min(...activeRows.filter(r => getNum(r, 10) > 0).map(r => getNum(r, 10))),
+        hKills: Math.max(...activeRows.map(r => getNum(r, 12)))
+    };
+
+    let html = "";
+    ranked.forEach((row, i) => html += generateRowHTML(row, `#${i+1}`, "", topStats));
+    
+    if (unranked.length > 0) {
+        html += `<tr><td colspan="13" class="text-center py-8 text-xs font-black uppercase tracking-[0.8em] text-gray-600 italic">— Unranked Division —</td></tr>`;
+        unranked.forEach(row => html += generateRowHTML(row, row[0] || '??', "opacity-40 grayscale", topStats));
     }
 
-    function hideLoader() {
-        const loader = document.getElementById('loading-screen');
-        const content = document.getElementById('dashboard-content');
-        if (!loader) return;
-        
-        loader.style.opacity = '0';
-        setTimeout(() => {
-            loader.style.display = 'none';
-            content.classList.remove('opacity-0');
-        }, 500);
-    }
+    lbBody.innerHTML = html;
+}
 
-    function renderTable(rows) {
-        const lbBody = document.getElementById('leaderboard-body');
-        
-        lbBody.innerHTML = rows.filter(row => row[1]).map(row => {
-            return `
-                <tr>
-                    <td class="font-bold text-gray-500 italic">${row[0] || ''}</td>
-                    <td class="font-bold uppercase text-white text-xl">${row[1] || ''}</td>
-                    <td>${row[2] || '0'}</td>
-                    <td>${row[3] || '0'}</td>
-                    <td class="accent font-black italic text-2xl">${row[4] || '0.00'}</td>
-                    <td class="text-green-500 font-bold">${row[5] || '0'}</td>
-                    <td class="text-red-500 font-bold">${row[6] || '0'}</td>
-                    <td>${row[7] || '0%'}</td>
-                    <td class="text-gray-400 font-mono text-base">${row[8] || '0'}</td>
-                    <td>${row[9] || '0'}</td>
-                    <td>${row[10] || '0'}</td>
-                    <td class="${row[11] > 0 ? 'text-yellow-500 font-bold' : 'text-gray-700'}">${row[11] || '0'}</td>
-                    <td class="font-bold text-blue-400 italic">${row[12] || '0'}</td>
-                </tr>
-            `;
-        }).join('');
-    }
+function generateRowHTML(row, rankLabel, cssClass, topStats) {
+    // Safety check for glowing logic
+    const getGlow = (val, target, isPct = false, isDeath = false) => {
+        if (val === undefined || val === null || target === 0 || target === Infinity) return '';
+        const num = isPct ? parseFloat(val.toString().replace('%','')) : parseFloat(val);
+        return num === target ? 'text-yellow-400 font-black drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]' : '';
+    };
 
-    init();
-    // Refresh every 15 seconds (highly responsive, stay under API quotas)
-    setInterval(init, 15000);
+    return `
+        <tr class="${cssClass} transition-all duration-300">
+            <td class="font-bold text-gray-500 italic text-sm">${rankLabel}</td>
+            <td class="font-bold uppercase text-white text-xl">${row[1] || ''}</td>
+            <td class="${getGlow(row[2], topStats.kills)}">${row[2] || '0'}</td>
+            <td>${row[3] || '0'}</td>
+            <td class="accent font-black italic text-3xl ${getGlow(row[4], topStats.kd)}">${row[4] || '0.00'}</td>
+            <td class="text-green-500 font-bold ${getGlow(row[5], topStats.wins)}">${row[5] || '0'}</td>
+            <td class="text-red-500 font-bold">${row[6] || '0'}</td>
+            <td class="${getGlow(row[7], topStats.wr, true)}">${row[7] || '0%'}</td>
+            <td class="text-gray-400 font-mono text-sm ${getGlow(row[8], topStats.gp)}">${row[8] || '0'}</td>
+            <td class="${getGlow(row[9], topStats.avgK)}">${row[9] || '0'}</td>
+            <td class="${getGlow(row[10], topStats.avgD, false, true)}">${row[10] || '0'}</td>
+            <td class="${parseFloat(row[11]) > 0 ? 'text-yellow-500 font-bold' : 'text-gray-800'}">${row[11] || '0'}</td>
+            <td class="font-bold text-blue-400 italic ${getGlow(row[12], topStats.hKills)}">${row[12] || '0'}</td>
+        </tr>
+    `;
+}
+
+function hideLoader() {
+    const loader = document.getElementById('loading-screen');
+    const content = document.getElementById('dashboard-content');
+    if (!loader) return;
+    loader.style.opacity = '0';
+    setTimeout(() => {
+        loader.style.display = 'none';
+        content.classList.remove('opacity-0');
+    }, 500);
+}
+
+init();
+setInterval(init, 15000);
 </script>
 </body>
 </html>
