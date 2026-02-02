@@ -1,27 +1,19 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CNC LEADERBOARD</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
-        body { background-color: #0a0a0c; color: #ffffff; font-family: 'Plus Jakarta Sans', sans-serif; }
-        .glass { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; }
-        .accent { color: #ff4655; }
-        th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #666; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.02); font-size: 13px; }
-        tr:hover { background: rgba(255, 70, 85, 0.05); }
-    </style>
-</head>
 <body class="p-4 md:p-8">
 
-    <div class="max-w-[1400px] mx-auto">
+    <div id="loading-screen" class="fixed inset-0 z-50 flex flex-col items-center justify-center bg-[#0a0a0c]">
+        <div class="relative w-20 h-20 mb-6">
+            <div class="absolute inset-0 border-4 border-[#ff4655] animate-ping opacity-20"></div>
+            <div class="absolute inset-0 border-2 border-[#ff4655] rotate-45 animate-[spin_3s_linear_infinite]"></div>
+            <div class="absolute inset-4 bg-[#ff4655] rotate-45 shadow-[0_0_20px_#ff4655]"></div>
+        </div>
+        <h2 class="text-xl font-black italic tracking-[0.3em] uppercase text-white animate-pulse">Establishing Connection</h2>
+        <p class="text-[10px] text-gray-500 font-mono mt-2 tracking-widest uppercase">Fetching Google Sheets Database...</p>
+    </div>
+
+    <div id="dashboard-content" class="max-w-[1400px] mx-auto opacity-0 transition-opacity duration-1000">
         <header class="mb-8">
             <h1 class="text-3xl font-extrabold italic uppercase tracking-tighter text-white">Customs <span class="accent">Leaderboard</span></h1>
-            <p id="status-text" class="text-gray-500 font-mono text-[10px] mt-1 uppercase tracking-widest">Syncing with Google Sheets...</p>
+            <p id="status-text" class="text-gray-500 font-mono text-[10px] mt-1 uppercase tracking-widest italic">Live // Data Sync</p>
         </header>
 
         <div class="overflow-x-auto glass">
@@ -49,64 +41,66 @@
         </div>
     </div>
 
-<script>
-    // 1. Ensure this link is exactly the "Publish to Web" CSV link from your sheet
-    const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR4nTO5eB8-EVq9RmGZNz-5gkCjY_lZQSFnq5N7Okne8CNgH7z1hnEj9OqoL_tk3C2kxj-zwIfQVrUD/pub?output=csv';
-    
-    // 2. Switched to a more reliable GitHub-friendly proxy
-    const PROXY_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(SHEET_URL);
+    <script>
+        const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR4nTO5eB8-EVq9RmGZNz-5gkCjY_lZQSFnq5N7Okne8CNgH7z1hnEj9OqoL_tk3C2kxj-zwIfQVrUD/pub?output=csv';
+        const PROXY_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(SHEET_URL);
 
-    function init() {
-        const status = document.getElementById('status-text');
-        
-        Papa.parse(PROXY_URL, {
-            download: true,
-            header: false,
-            skipEmptyLines: true,
-            complete: (results) => {
-                if (results.data && results.data.length > 1) {
-                    const dataRows = results.data.slice(1); 
-                    renderTable(dataRows);
-                    status.innerText = "LIVE // SYNCED";
-                } else {
-                    status.innerText = "ERROR: SHEET DATA EMPTY";
+        function init() {
+            Papa.parse(PROXY_URL, {
+                download: true,
+                header: false,
+                skipEmptyLines: true,
+                complete: (results) => {
+                    if (results.data && results.data.length > 1) {
+                        const dataRows = results.data.slice(1); 
+                        renderTable(dataRows);
+                        hideLoader();
+                    }
+                },
+                error: (err) => {
+                    document.getElementById('status-text').innerText = "CONNECTION FAILED: " + err;
                 }
-            },
-            error: (err) => {
-                console.error("PapaParse Error:", err);
-                status.innerText = "ERROR: " + err;
-            }
-        });
-    }
+            });
+        }
 
-    function renderTable(rows) {
-        const lbBody = document.getElementById('leaderboard-body');
-        
-        // Filtering out rows that don't have an IGN (Column B) to prevent empty rows
-        lbBody.innerHTML = rows.filter(row => row[1]).map(row => {
-            return `
-                <tr>
-                    <td class="font-bold text-gray-500">${row[0] || ''}</td>
-                    <td class="font-bold uppercase text-white">${row[1] || ''}</td>
-                    <td>${row[2] || '0'}</td>
-                    <td>${row[3] || '0'}</td>
-                    <td class="accent font-bold">${row[4] || '0.00'}</td>
-                    <td class="text-green-500 font-semibold">${row[5] || '0'}</td>
-                    <td class="text-red-500 font-semibold">${row[6] || '0'}</td>
-                    <td>${row[7] || '0%'}</td>
-                    <td class="text-gray-400 font-mono">${row[8] || '0'}</td>
-                    <td>${row[9] || '0'}</td>
-                    <td>${row[10] || '0'}</td>
-                    <td class="${row[11] > 0 ? 'text-yellow-500 font-bold' : 'text-gray-600'}">${row[11] || '0'}</td>
-                    <td class="font-bold text-blue-400 italic">${row[12] || '0'}</td>
-                </tr>
-            `;
-        }).join('');
-    }
+        function renderTable(rows) {
+            const lbBody = document.getElementById('leaderboard-body');
+            // Mapping exactly to your spreadsheet columns
+            lbBody.innerHTML = rows.filter(row => row[1]).map(row => {
+                return `
+                    <tr>
+                        <td class="font-bold text-gray-500">${row[0] || ''}</td>
+                        <td class="font-bold uppercase text-white">${row[1] || ''}</td>
+                        <td>${row[2] || '0'}</td>
+                        <td>${row[3] || '0'}</td>
+                        <td class="accent font-bold">${row[4] || '0.00'}</td>
+                        <td class="text-green-500 font-semibold">${row[5] || '0'}</td>
+                        <td class="text-red-500 font-semibold">${row[6] || '0'}</td>
+                        <td>${row[7] || '0%'}</td>
+                        <td class="text-gray-400 font-mono text-xs">${row[8] || '0'}</td>
+                        <td>${row[9] || '0'}</td>
+                        <td>${row[10] || '0'}</td>
+                        <td class="${row[11] > 0 ? 'text-yellow-500 font-bold' : 'text-gray-600'}">${row[11] || '0'}</td>
+                        <td class="font-bold text-blue-400 italic">${row[12] || '0'}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
 
-    // Run immediately
-    init();
-    // Auto-refresh every 60 seconds
-    setInterval(init, 60000);
-</script>
+        function hideLoader() {
+            const loader = document.getElementById('loading-screen');
+            const content = document.getElementById('dashboard-content');
+            
+            // Fade out loader
+            loader.classList.add('opacity-0');
+            setTimeout(() => {
+                loader.style.display = 'none';
+                // Fade in content
+                content.classList.remove('opacity-0');
+            }, 500);
+        }
 
+        init();
+        setInterval(init, 60000);
+    </script>
+</body>
