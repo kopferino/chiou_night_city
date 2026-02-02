@@ -63,7 +63,7 @@
 
 <script>
     const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR4nTO5eB8-EVq9RmGZNz-5gkCjY_lZQSFnq5N7Okne8CNgH7z1hnEj9OqoL_tk3C2kxj-zwIfQVrUD/pub?output=csv';
-    const PROXY_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(SHEET_URL);
+    const PROXY_URL = 'https://api.allorigins.win/raw?url=' + encodeURIComponent(SHEET_URL + '&cache=' + Math.random());
 
     function init() {
         const status = document.getElementById('status-text');
