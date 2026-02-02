@@ -10,6 +10,38 @@
         overflow: hidden;
     }
 
+    /* ... existing styles ... */
+
+    /* Burning Background Effect for Rank 1 */
+    .fire-bg {
+        background: linear-gradient(90deg, 
+            rgba(255, 70, 85, 0.15) 0%, 
+            rgba(10, 10, 12, 0) 50%, 
+            rgba(255, 70, 85, 0.05) 100%
+        ) !important;
+        position: relative;
+    }
+
+    /* Particles appearing behind the text */
+    .fire-particle {
+        position: absolute;
+        bottom: 5px;
+        width: 4px;
+        height: 4px;
+        background: #ff4655;
+        border-radius: 50%;
+        filter: blur(1.5px);
+        box-shadow: 0 0 10px #ff4655;
+        animation: fireFloat 1.5s infinite ease-out;
+        pointer-events: none;
+        z-index: 1; /* Sits behind the name text */
+    }
+
+    @keyframes fireFloat {
+        0% { transform: translateY(0) scale(1); opacity: 0.8; }
+        100% { transform: translateY(-30px) scale(0.3); opacity: 0; }
+    }
+
     tr::after {
         content: "";
         position: absolute;
@@ -186,7 +218,8 @@ function generateRowHTML(row, rankLabel, cssClass, topStats) {
     // APPLY ANIMATED GRADIENTS TO TOP 5
     if (cssClass !== "unranked-row") {
         if (rankNum === 1) {
-            specialStyle = "gold-gradient animate-gradient border-l-4 border-yellow-500 shadow-[inset_0_0_20px_rgba(234,179,8,0.1)]";
+            // Added 'fire-bg' for the burning background effect
+            specialStyle = "gold-gradient animate-gradient border-l-4 border-yellow-500 shadow-[inset_0_0_30px_rgba(255,70,85,0.15)] fire-bg";
             rankIcon = `<span class="text-3xl drop-shadow-md">👑</span>`;
         } else if (rankNum === 2) {
             specialStyle = "silver-gradient animate-gradient border-l-4 border-gray-400";
@@ -201,21 +234,29 @@ function generateRowHTML(row, rankLabel, cssClass, topStats) {
     }
 
     const getGlow = (val, target, isPct = false, isDeath = false) => {
-        if (val === undefined || val === null || target === 0 || target === Infinity) return '';
+        if (!val || target === 0 || target === Infinity) return '';
         const num = isPct ? parseFloat(val.toString().replace('%','')) : parseFloat(val);
         return num === target ? 'text-yellow-400 font-black drop-shadow-[0_0_12px_rgba(250,204,21,0.8)]' : '';
     };
 
-    // Note the added "relative overflow-hidden" classes for the hover shimmer
-    // Note: 'relative' and 'overflow-hidden' are REQUIRED for the shimmer to stay inside the row
-    // 'group' allows us to trigger the shimmer the instant the mouse enters the row area
     return `
-        <tr class="${cssClass} ${specialStyle} relative overflow-hidden transition-all duration-700 cursor-pointer group">
+        <tr class="${cssClass} ${specialStyle} relative overflow-hidden transition-all duration-500 cursor-pointer group">
             <td class="py-6 font-bold text-gray-500 italic text-center">${rankIcon}</td>
-            <td class="font-bold uppercase text-white text-xl tracking-tighter">
-                ${row[1] || ''} 
-                ${rankNum === 1 ? '<span class="text-[9px] bg-yellow-500 text-black px-2 py-0.5 rounded ml-2 font-black tracking-widest animate-pulse">GOAT</span>' : ''}
+            
+            <td class="font-bold uppercase text-white text-xl tracking-tighter relative">
+                <span class="relative z-10">${row[1] || ''}</span>
+                ${rankNum === 1 ? `
+                    <span class="relative inline-block ml-2">
+                        <span class="text-[9px] bg-[#ff4655] text-white px-2 py-0.5 rounded font-black tracking-widest animate-pulse relative z-10 shadow-[0_0_15px_rgba(255,70,85,0.6)]">GOAT</span>
+                        <div class="fire-particle" style="left: 20%; animation-delay: 0.1s;"></div>
+                        <div class="fire-particle" style="left: 80%; animation-delay: 0.4s;"></div>
+                    </span>
+                    <div class="fire-particle" style="left: 10%; bottom: 10px; animation-delay: 0.2s;"></div>
+                    <div class="fire-particle" style="left: 30%; bottom: 10px; animation-delay: 0.6s;"></div>
+                    <div class="fire-particle" style="left: 50%; bottom: 10px; animation-delay: 0.3s;"></div>
+                ` : ''}
             </td>
+
             <td class="${getGlow(row[2], topStats.kills)}">${row[2] || '0'}</td>
             <td class="opacity-30 text-xs">${row[3] || '0'}</td>
             <td class="accent font-black italic text-4xl ${getGlow(row[4], topStats.kd)}">${row[4] || '0.00'}</td>
@@ -228,7 +269,7 @@ function generateRowHTML(row, rankLabel, cssClass, topStats) {
             <td class="${parseFloat(row[11]) > 0 ? 'text-yellow-500 font-bold' : 'text-gray-800'}">${row[11] || '0'}</td>
             <td class="font-bold text-blue-400 italic ${getGlow(row[12], topStats.hKills)}">${row[12] || '0'}</td>
         </tr>
-    `;s
+    `;
 }
 
 function hideLoader() {
