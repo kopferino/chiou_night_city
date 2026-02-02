@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Valorant Customs | Pro Leaderboard</title>
+    <title>CNC LEADERBOARD</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
@@ -11,17 +11,17 @@
         body { background-color: #0a0a0c; color: #ffffff; font-family: 'Plus Jakarta Sans', sans-serif; }
         .glass { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; }
         .accent { color: #ff4655; }
-        th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #666; padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.05); }
-        td { padding: 16px; border-bottom: 1px solid rgba(255,255,255,0.02); font-size: 14px; }
-        tr:hover { background: rgba(255, 70, 85, 0.03); }
+        th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #666; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.02); font-size: 13px; }
+        tr:hover { background: rgba(255, 70, 85, 0.05); }
     </style>
 </head>
-<body class="p-4 md:p-12">
+<body class="p-4 md:p-8">
 
-    <div class="max-w-7xl mx-auto">
-        <header class="mb-10">
-            <h1 class="text-4xl font-extrabold italic uppercase tracking-tighter">Customs <span class="accent">Master Standings</span></h1>
-            <p id="status-text" class="text-gray-500 font-mono text-[10px] mt-2 uppercase tracking-widest">Awaiting Spreadsheet Sync...</p>
+    <div class="max-w-[1400px] mx-auto">
+        <header class="mb-8">
+            <h1 class="text-3xl font-extrabold italic uppercase tracking-tighter text-white">Customs <span class="accent">Leaderboard</span></h1>
+            <p id="status-text" class="text-gray-500 font-mono text-[10px] mt-1 uppercase tracking-widest">Syncing with Google Sheets...</p>
         </header>
 
         <div class="overflow-x-auto glass">
@@ -30,15 +30,15 @@
                     <tr>
                         <th>Rank</th>
                         <th>Player IGN</th>
-                        <th>K</th>
-                        <th>D</th>
-                        <th>K/D Ratio</th>
-                        <th>W</th>
-                        <th>L</th>
+                        <th>Kills</th>
+                        <th>Deaths</th>
+                        <th>KD Ratio</th>
+                        <th>Wins</th>
+                        <th>Loss</th>
                         <th>WR%</th>
                         <th>GP</th>
-                        <th>Avg K</th>
-                        <th>Avg D</th>
+                        <th>Avg K/G</th>
+                        <th>Avg D/G</th>
                         <th>Pi(s)</th>
                         <th>Highest K</th>
                     </tr>
@@ -59,79 +59,41 @@
                 header: false,
                 skipEmptyLines: true,
                 complete: (results) => {
-                    const rows = results.data.slice(1); // Remove header row
-                    renderLeaderboard(rows);
+                    // Skip the header row (Row 1)
+                    const dataRows = results.data.slice(1); 
+                    renderTable(dataRows);
                 }
             });
         }
 
-        function renderLeaderboard(rows) {
-            const playerStats = {};
-
-            rows.forEach(row => {
-                /* Position Mapping: 
-                   Adjust these numbers if your sheet order changes!
-                   [9] Player | [5] K | [6] D | [1] Team/Outcome 
-                */
-                const name = row[9] || "Unknown";
-                const k = parseInt(row[5]) || 0;
-                const d = parseInt(row[6]) || 0;
-                const outcome = (row[1] || "").toLowerCase(); // Assuming Team col indicates win/loss context
-
-                if (!playerStats[name]) {
-                    playerStats[name] = { 
-                        name, k: 0, d: 0, wins: 0, losses: 0, 
-                        gp: 0, pis: 0, highestK: 0 
-                    };
-                }
-
-                const p = playerStats[name];
-                p.k += k;
-                p.d += d;
-                p.gp += 1;
-                if (k === 3 && d === 14) p.pis += 1;
-                if (k > p.highestK) p.highestK = k;
-                
-                // Note: Logic for W/L depends on how you track it in Col [1]
-                // If Col [1] contains 'Win' or 'Loss':
-                if (outcome.includes('win')) p.wins += 1;
-                else if (outcome.includes('loss')) p.losses += 1;
-            });
-
-            // Calculate and Sort by K/D
-            const sorted = Object.values(playerStats).sort((a, b) => (b.k / (b.d || 1)) - (a.k / (a.d || 1)));
-
+        function renderTable(rows) {
             const lbBody = document.getElementById('leaderboard-body');
             document.getElementById('status-text').innerText = "LIVE // DATA SYNCED";
             
-            lbBody.innerHTML = sorted.map((p, i) => {
-                const kd = (p.k / (p.d || 1)).toFixed(2);
-                const wr = ((p.wins / (p.gp || 1)) * 100).toFixed(0);
-                const avgK = (p.k / p.gp).toFixed(1);
-                const avgD = (p.d / p.gp).toFixed(1);
-
+            lbBody.innerHTML = rows.map(row => {
+                // Mapping exactly to the visual order of your Google Sheet columns
                 return `
                     <tr>
-                        <td class="font-bold text-gray-500">#${i + 1}</td>
-                        <td class="font-bold uppercase text-white">${p.name}</td>
-                        <td>${p.k}</td>
-                        <td>${p.d}</td>
-                        <td class="accent font-bold">${kd}</td>
-                        <td class="text-green-500">${p.wins}</td>
-                        <td class="text-red-500">${p.losses}</td>
-                        <td>${wr}%</td>
-                        <td class="text-gray-400">${p.gp}</td>
-                        <td>${avgK}</td>
-                        <td>${avgD}</td>
-                        <td class="${p.pis > 0 ? 'text-yellow-500' : 'text-gray-600'}">${p.pis}</td>
-                        <td class="font-bold text-blue-400">${p.highestK}</td>
+                        <td class="font-bold text-gray-500">${row[0] || ''}</td>
+                        <td class="font-bold uppercase text-white">${row[1] || 'Unknown'}</td>
+                        <td>${row[2] || '0'}</td>
+                        <td>${row[3] || '0'}</td>
+                        <td class="accent font-bold">${row[4] || '0.00'}</td>
+                        <td class="text-green-500 font-semibold">${row[5] || '0'}</td>
+                        <td class="text-red-500 font-semibold">${row[6] || '0'}</td>
+                        <td>${row[7] || '0%'}</td>
+                        <td class="text-gray-400 font-mono">${row[8] || '0'}</td>
+                        <td>${row[9] || '0'}</td>
+                        <td>${row[10] || '0'}</td>
+                        <td class="${row[11] > 0 ? 'text-yellow-500 font-bold' : 'text-gray-600'}">${row[11] || '0'}</td>
+                        <td class="font-bold text-blue-400 italic">${row[12] || '0'}</td>
                     </tr>
                 `;
             }).join('');
         }
 
         init();
-        setInterval(init, 60000); // Auto-refresh every minute
+        setInterval(init, 30000); // Refresh every 30 seconds
     </script>
 </body>
 </html>
