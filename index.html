@@ -1,5 +1,44 @@
 <!DOCTYPE html>
 <html lang="en">
+
+<style>
+    /* ... existing styles ... */
+
+    /* The Shimmer Shine Effect */
+    tr {
+        position: relative;
+        overflow: hidden;
+    }
+
+    tr::after {
+        content: "";
+        position: absolute;
+        top: 0;
+        left: -150%;
+        /* Increased width to make it more noticeable */
+        width: 100%; 
+        height: 100%;
+        background: linear-gradient(
+            to right,
+            transparent,
+            rgba(255, 255, 255, 0.15), /* Brighter white */
+            rgba(255, 255, 255, 0.25), /* Peak brightness */
+            rgba(255, 255, 255, 0.15),
+            transparent
+        );
+        transform: skewX(-25deg);
+        /* Set a default transition so it doesn't "snap" back instantly */
+        transition: left 0s; 
+        pointer-events: none;
+    }
+
+    tr:hover::after {
+        left: 50%;
+        /* Slower duration (1.5s) for a more prominent "sweep" */
+        transition: left 1.5s cubic-bezier(0.19, 1, 0.22, 1); 
+    }
+</style>
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -140,30 +179,56 @@ function renderTable(rows) {
 }
 
 function generateRowHTML(row, rankLabel, cssClass, topStats) {
-    // Safety check for glowing logic
+    const rankNum = parseInt(rankLabel.replace('#', ''));
+    let specialStyle = "";
+    let rankIcon = rankLabel;
+
+    // APPLY ANIMATED GRADIENTS TO TOP 5
+    if (cssClass !== "unranked-row") {
+        if (rankNum === 1) {
+            specialStyle = "gold-gradient animate-gradient border-l-4 border-yellow-500 shadow-[inset_0_0_20px_rgba(234,179,8,0.1)]";
+            rankIcon = `<span class="text-3xl drop-shadow-md">👑</span>`;
+        } else if (rankNum === 2) {
+            specialStyle = "silver-gradient animate-gradient border-l-4 border-gray-400";
+            rankIcon = `<span class="text-2xl">🥈</span>`;
+        } else if (rankNum === 3) {
+            specialStyle = "bronze-gradient animate-gradient border-l-4 border-orange-700";
+            rankIcon = `<span class="text-2xl">🥉</span>`;
+        } else if (rankNum <= 5) {
+            specialStyle = "elite-gradient animate-gradient border-l-2 border-white/20";
+            rankIcon = `<span class="text-white font-black italic">#${rankNum}</span>`;
+        }
+    }
+
     const getGlow = (val, target, isPct = false, isDeath = false) => {
         if (val === undefined || val === null || target === 0 || target === Infinity) return '';
         const num = isPct ? parseFloat(val.toString().replace('%','')) : parseFloat(val);
-        return num === target ? 'text-yellow-400 font-black drop-shadow-[0_0_10px_rgba(250,204,21,0.6)]' : '';
+        return num === target ? 'text-yellow-400 font-black drop-shadow-[0_0_12px_rgba(250,204,21,0.8)]' : '';
     };
 
+    // Note the added "relative overflow-hidden" classes for the hover shimmer
+    // Note: 'relative' and 'overflow-hidden' are REQUIRED for the shimmer to stay inside the row
+    // 'group' allows us to trigger the shimmer the instant the mouse enters the row area
     return `
-        <tr class="${cssClass} transition-all duration-300">
-            <td class="font-bold text-gray-500 italic text-sm">${rankLabel}</td>
-            <td class="font-bold uppercase text-white text-xl">${row[1] || ''}</td>
+        <tr class="${cssClass} ${specialStyle} relative overflow-hidden transition-all duration-700 cursor-pointer group">
+            <td class="py-6 font-bold text-gray-500 italic text-center">${rankIcon}</td>
+            <td class="font-bold uppercase text-white text-xl tracking-tighter">
+                ${row[1] || ''} 
+                ${rankNum === 1 ? '<span class="text-[9px] bg-yellow-500 text-black px-2 py-0.5 rounded ml-2 font-black tracking-widest animate-pulse">GOAT</span>' : ''}
+            </td>
             <td class="${getGlow(row[2], topStats.kills)}">${row[2] || '0'}</td>
-            <td>${row[3] || '0'}</td>
-            <td class="accent font-black italic text-3xl ${getGlow(row[4], topStats.kd)}">${row[4] || '0.00'}</td>
+            <td class="opacity-30 text-xs">${row[3] || '0'}</td>
+            <td class="accent font-black italic text-4xl ${getGlow(row[4], topStats.kd)}">${row[4] || '0.00'}</td>
             <td class="text-green-500 font-bold ${getGlow(row[5], topStats.wins)}">${row[5] || '0'}</td>
-            <td class="text-red-500 font-bold">${row[6] || '0'}</td>
-            <td class="${getGlow(row[7], topStats.wr, true)}">${row[7] || '0%'}</td>
+            <td class="text-red-500 font-bold opacity-30 text-xs">${row[6] || '0'}</td>
+            <td class="${getGlow(row[7], topStats.wr, true)} font-bold">${row[7] || '0%'}</td>
             <td class="text-gray-400 font-mono text-sm ${getGlow(row[8], topStats.gp)}">${row[8] || '0'}</td>
-            <td class="${getGlow(row[9], topStats.avgK)}">${row[9] || '0'}</td>
-            <td class="${getGlow(row[10], topStats.avgD, false, true)}">${row[10] || '0'}</td>
+            <td class="${getGlow(row[9], topStats.avgK)} text-sm">${row[9] || '0'}</td>
+            <td class="${getGlow(row[10], topStats.avgD, false, true)} text-sm">${row[10] || '0'}</td>
             <td class="${parseFloat(row[11]) > 0 ? 'text-yellow-500 font-bold' : 'text-gray-800'}">${row[11] || '0'}</td>
             <td class="font-bold text-blue-400 italic ${getGlow(row[12], topStats.hKills)}">${row[12] || '0'}</td>
         </tr>
-    `;
+    `;s
 }
 
 function hideLoader() {
