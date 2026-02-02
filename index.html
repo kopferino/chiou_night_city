@@ -1,3 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valorant Customs Leaderboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;800&display=swap');
+        body { background-color: #0a0a0c; color: #ffffff; font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass { background: rgba(255, 255, 255, 0.02); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; }
+        .accent { color: #ff4655; }
+        th { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: #666; padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05); }
+        td { padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.02); font-size: 13px; }
+        tr:hover { background: rgba(255, 70, 85, 0.05); }
+    </style>
+</head>
+<body class="p-4 md:p-8">
+
+    <div class="max-w-[1400px] mx-auto">
+        <header class="mb-8">
+            <h1 class="text-3xl font-extrabold italic uppercase tracking-tighter text-white">Customs <span class="accent">Leaderboard</span></h1>
+            <p id="status-text" class="text-gray-500 font-mono text-[10px] mt-1 uppercase tracking-widest">Syncing with Google Sheets...</p>
+        </header>
+
+        <div class="overflow-x-auto glass">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr>
+                        <th>Rank</th>
+                        <th>Player IGN</th>
+                        <th>Kills</th>
+                        <th>Deaths</th>
+                        <th>KD Ratio</th>
+                        <th>Wins</th>
+                        <th>Loss</th>
+                        <th>WR%</th>
+                        <th>GP</th>
+                        <th>Avg K/G</th>
+                        <th>Avg D/G</th>
+                        <th>Pi(s)</th>
+                        <th>Highest K</th>
+                    </tr>
+                </thead>
+                <tbody id="leaderboard-body">
+                    </tbody>
+            </table>
+        </div>
+    </div>
+
 <script>
     // 1. Ensure this link is exactly the "Publish to Web" CSV link from your sheet
     const SHEET_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR4nTO5eB8-EVq9RmGZNz-5gkCjY_lZQSFnq5N7Okne8CNgH7z1hnEj9OqoL_tk3C2kxj-zwIfQVrUD/pub?output=csv';
