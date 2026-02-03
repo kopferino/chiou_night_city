@@ -141,13 +141,28 @@ function switchTab(tab) {
 }
 
 function renderTable() {
-    const head = document.getElementById('table-head'); const body = document.getElementById('leaderboard-body');
+    const head = document.getElementById('table-head'); 
+    const body = document.getElementById('leaderboard-body');
+    
+    // Set Table Headers based on active tab
     head.innerHTML = activeTab === 'kd' ? 
         `<tr><th class="text-center">Rank</th><th>Player</th><th>Kills</th><th>Deaths</th><th class="text-center">KDR</th><th>Wins</th><th>Losses</th><th>WR%</th><th>GP</th><th>Avg K</th><th>Avg D</th><th>Best</th></tr>` :
         `<tr><th class="text-center">Rank</th><th>Player</th><th class="text-center bg-white/5">PQS</th><th>Kills</th><th>KDR</th><th>Wins</th><th>GP</th></tr>`;
     
-    const ranked = [...masterData].filter(p => !p.rankId?.toString().includes('?')).sort((a,b) => b[activeTab] - a[activeTab]);
-    const unranked = [...masterData].filter(p => p.rankId?.toString().includes('?'));
+    // NEW LOGIC: Separate players into Ranked and Unranked based on Rank ID OR hitting 5 Games Played
+    const ranked = [...masterData].filter(p => {
+        const hasRankId = !p.rankId?.toString().includes('?');
+        const hasFiveGames = p.gp >= 5;
+        return hasRankId || hasFiveGames;
+    }).sort((a,b) => b[activeTab] - a[activeTab]);
+
+    const unranked = [...masterData].filter(p => {
+        const isUnrankedId = p.rankId?.toString().includes('?');
+        const hasLessFiveGames = p.gp < 5;
+        return isUnrankedId && hasLessFiveGames;
+    });
+
+    // Render the body
     body.innerHTML = ranked.map((p, i) => generateRowHTML(p, i + 1)).join('') + 
                      `<tr class="bg-white/5"><td colspan="12" class="text-center py-4 text-[10px] font-black tracking-[0.5em] text-white/40">UNRANKED PLACEMENTS</td></tr>` +
                      unranked.map(p => generateRowHTML(p, '?')).join('');
