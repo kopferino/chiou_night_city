@@ -29,6 +29,19 @@
         <p id="status-text" class="text-gray-500 font-mono text-xs mb-8 uppercase tracking-widest">Initialising API Sync...</p>
 
         <div class="space-y-8">
+		<div class="p-6 border border-white/5 rounded-xl bg-white/[0.01]">
+    			<label class="block text-xs uppercase text-gray-400 mb-4 font-bold tracking-widest italic">3. Live Announcement</label>
+    			<div class="space-y-4">
+        			<input type="text" id="news-title" placeholder="HEADER (e.g., SYSTEM UPDATE)" 
+               		class="w-full bg-white/5 border border-white/10 p-4 rounded text-white text-lg outline-none focus:border-[#ff4655]">
+        			<textarea id="news-body" placeholder="MESSAGE CONTENT..." rows="2" 
+               		class="w-full bg-white/5 border border-white/10 p-4 rounded text-white text-lg outline-none focus:border-[#ff4655] resize-none"></textarea>
+    		</div>
+    		<div class="grid grid-cols-2 gap-4 mt-4">
+        		<button onclick="submitNews()" class="bg-[#ff4655] text-white p-4 rounded font-black italic uppercase hover:scale-[1.02] transition">Publish News</button>
+        		<button onclick="clearNews()" class="bg-white/10 text-white p-4 rounded font-black italic uppercase hover:bg-white/20 transition text-xs">Clear News</button>
+    		</div>
+		</div>
             <div>
                 <label class="block text-xs uppercase text-gray-500 mb-2 font-bold">Select Player</label>
                 <select id="player-select" class="w-full bg-white/10 border border-white/10 p-4 rounded text-white text-lg outline-none focus:border-[#ff4655] cursor-pointer"></select>
@@ -65,7 +78,7 @@
     const API_KEY = "AIzaSyBZ6oTJCJUSxCsz_3fbi7lNo-2OP4Y5IDk";
     const SHEET_ID = "1ALv-N6o8GQ9qvcHR-xKPqaQYEXyqJsItkx2EheCcykc";
     const RANGE = "'Leaderboard'!A2:B100"; // We only need Rank and IGN for the dropdown
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby_1YagdWp68GLT1oD9sleOQyo99jZmtBsE5EIdTDr2puCMGCVHp4YorVEj10FabqQd/exec";
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxf4qbhQlSPa4UCbGzZEjf-QoMgJ_JTh0ySPfXgMbRVyfN7K3oZoL0tHY1CgpAorBPh/exec";
 
     // --- PASSWORD LOGIC ---
     function checkPassword() {
@@ -132,6 +145,34 @@
             result: res
         });
     }
+
+    function submitNews() {
+    	const title = document.getElementById('news-title').value;
+    	const body = document.getElementById('news-body').value;
+    
+    	if (!title && !body) {
+        	alert("Please enter a title or a message.");
+        	return;
+    	}
+    
+    	sendToSheet({
+        	type: 'announcement',
+        	title: title,
+        	body: body
+    	});
+	}
+
+	function clearNews() {
+    		if (confirm("This will remove the announcement from the website. Continue?")) {
+        	sendToSheet({ 
+            	type: 'announcement', 
+            	title: '', 
+            	body: '' 
+        	});
+        	document.getElementById('news-title').value = "";
+        	document.getElementById('news-body').value = "";
+    		}
+	}
 
     // Enter key support
     document.getElementById('pass-input').addEventListener('keypress', (e) => { if (e.key === 'Enter') checkPassword(); });
