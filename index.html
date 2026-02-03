@@ -11,7 +11,6 @@
         body { background-color: #0a0a0c; color: #ffffff; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-user-select: none; user-select: none; overflow-x: hidden; }
         .glass { background: rgba(10, 10, 12, 0.7) !important; backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; }
         
-        /* Aurora Background */
         .aurora-container { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
         .aurora-glow { 
             position: absolute; top: -10%; right: -5%; width: 65vw; height: 65vw; 
@@ -20,10 +19,8 @@
         }
         @keyframes auroraMove { from { transform: translate(0,0); } to { transform: translate(-10%, 5%); } }
 
-        /* Announcement Glow */
         #announcement-bar { box-shadow: 0 0 25px rgba(255, 70, 85, 0.35); border: 1px solid rgba(255, 70, 85, 0.5); }
 
-        /* Hover & Shimmer */
         tr { position: relative; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
         tr:hover { transform: scale(1.012); background: rgba(255, 255, 255, 0.05) !important; z-index: 10; }
         tr:hover::after {
@@ -33,7 +30,6 @@
         }
         @keyframes shimmer { 0% { left: -150%; } 100% { left: 150%; } }
 
-        /* Icons & Highlighting */
         .rank-cell { text-align: center; width: 110px; vertical-align: middle; }
         .rank-crown { font-size: 3.8rem; filter: drop-shadow(0 0 15px rgba(250, 204, 21, 0.6)); }
         .rank-medal { font-size: 3rem; }
@@ -52,7 +48,6 @@
             <div class="absolute inset-6 bg-[#ff4655] rotate-45 shadow-[0_0_30px_#ff4655]"></div>
         </div>
         <h2 class="text-2xl font-black italic tracking-[0.4em] uppercase text-white animate-pulse">Establishing Connection</h2>
-        <p class="text-xs text-gray-500 font-mono mt-4 tracking-widest uppercase">Fetching Live API Data...</p>
     </div>
 
     <div class="aurora-container"><div class="aurora-glow"></div></div>
@@ -103,11 +98,11 @@ async function init() {
         if (lbData.values) {
             masterData = lbData.values.filter(r => r[1]).map(r => ({
                 rankId: r[0], name: r[1], kills: parseInt(r[2])||0, deaths: parseInt(r[3])||0,
-                kd: parseFloat(r[4])||0, wins: parseInt(r[5])||0, wr: r[7]||'0%', gp: parseInt(r[8])||0, 
-                avgK: parseFloat(r[9])||0, avgD: parseFloat(r[10])||0, highestK: parseInt(r[12])||0, pqs: parseFloat(r[13])||0 
+                kd: parseFloat(r[4])||0, wins: parseInt(r[5])||0, losses: parseInt(r[6])||0, 
+                wr: r[7]||'0%', gp: parseInt(r[8])||0, avgK: parseFloat(r[9])||0, 
+                avgD: parseFloat(r[10])||0, highestK: parseInt(r[12])||0, pqs: parseFloat(r[13])||0 
             }));
-            calculateTopStats(); renderTable();
-            hideLoader();
+            calculateTopStats(); renderTable(); hideLoader();
         }
     } catch (e) { console.error(e); }
 }
@@ -116,13 +111,14 @@ function calculateTopStats() {
     const ranked = masterData.filter(p => !p.rankId?.toString().includes('?'));
     topStats = {
         kills: Math.max(...ranked.map(p => p.kills)), 
-        deaths: Math.max(...ranked.map(p => p.deaths)), // High death highlighting
+        deaths: Math.max(...ranked.map(p => p.deaths)),
         kd: Math.max(...ranked.map(p => p.kd)),
         wins: Math.max(...ranked.map(p => p.wins)), 
+        losses: Math.max(...ranked.map(p => p.losses)),
         wr: Math.max(...ranked.map(p => parseFloat(p.wr.replace('%','')))),
         gp: Math.max(...ranked.map(p => p.gp)), 
         avgK: Math.max(...ranked.map(p => p.avgK)),
-        avgD: Math.max(...ranked.map(p => p.avgD)), // High average death highlighting
+        avgD: Math.max(...ranked.map(p => p.avgD)),
         highestK: Math.max(...ranked.map(p => p.highestK)), 
         pqs: Math.max(...ranked.map(p => p.pqs))
     };
@@ -143,7 +139,7 @@ function switchTab(tab) {
 function renderTable() {
     const head = document.getElementById('table-head'); const body = document.getElementById('leaderboard-body');
     head.innerHTML = activeTab === 'kd' ? 
-        `<tr><th class="text-center">Rank</th><th>Player</th><th>Kills</th><th>Deaths</th><th class="text-center">KDR</th><th>Wins</th><th>WR%</th><th>GP</th><th>Avg K</th><th>Avg D</th><th>Best</th></tr>` :
+        `<tr><th class="text-center">Rank</th><th>Player</th><th>Kills</th><th>Deaths</th><th class="text-center">KDR</th><th>Wins</th><th>Losses</th><th>WR%</th><th>GP</th><th>Avg K</th><th>Avg D</th><th>Best</th></tr>` :
         `<tr><th class="text-center">Rank</th><th>Player</th><th class="text-center bg-white/5">PQS</th><th>Kills</th><th>KDR</th><th>Wins</th><th>GP</th></tr>`;
     
     const ranked = [...masterData].filter(p => !p.rankId?.toString().includes('?')).sort((a,b) => b[activeTab] - a[activeTab]);
@@ -169,6 +165,7 @@ function generateRowHTML(p, rank) {
             <td class="${glow(p.deaths, topStats.deaths)}">${p.deaths}</td>
             <td class="text-5xl font-black italic text-center ${p.kd<1?'text-green-500':'text-red-500'} ${glow(p.kd, topStats.kd)}">${p.kd.toFixed(3)}</td>
             <td class="text-green-500 font-bold ${glow(p.wins, topStats.wins)}">${p.wins}</td>
+            <td class="text-red-500 font-bold ${glow(p.losses, topStats.losses)}">${p.losses}</td>
             <td class="font-bold ${glow(p.wr, topStats.wr)}">${p.wr}</td>
             <td class="font-mono ${glow(p.gp, topStats.gp)}">${p.gp}</td>
             <td class="${glow(p.avgK, topStats.avgK)}">${p.avgK}</td>
