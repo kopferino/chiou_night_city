@@ -112,19 +112,25 @@ async function init() {
 }
 
 function calculateTopStats() {
-    const ranked = masterData.filter(p => !p.rankId?.toString().includes('?'));
+    // UPDATED: Include anyone who has a manual rank OR has hit the 5-game threshold
+    const rankedPlayers = masterData.filter(p => {
+        const hasRankId = !p.rankId?.toString().includes('?');
+        const hasFiveGames = p.gp >= 5;
+        return hasRankId || hasFiveGames;
+    });
+
     topStats = {
-        kills: Math.max(...ranked.map(p => p.kills)), 
-        deaths: Math.max(...ranked.map(p => p.deaths)),
-        kd: Math.max(...ranked.map(p => p.kd)),
-        wins: Math.max(...ranked.map(p => p.wins)), 
-        losses: Math.max(...ranked.map(p => p.losses)),
-        wr: Math.max(...ranked.map(p => parseFloat(p.wr.replace('%','')))),
-        gp: Math.max(...ranked.map(p => p.gp)), 
-        avgK: Math.max(...ranked.map(p => p.avgK)),
-        avgD: Math.max(...ranked.map(p => p.avgD)),
-        highestK: Math.max(...ranked.map(p => p.highestK)), 
-        pqs: Math.max(...ranked.map(p => p.pqs))
+        kills: Math.max(...rankedPlayers.map(p => p.kills)), 
+        deaths: Math.max(...rankedPlayers.map(p => p.deaths)),
+        kd: Math.max(...rankedPlayers.map(p => p.kd)),
+        wins: Math.max(...rankedPlayers.map(p => p.wins)), 
+        losses: Math.max(...rankedPlayers.map(p => p.losses)),
+        wr: Math.max(...rankedPlayers.map(p => parseFloat(p.wr.replace('%','')))),
+        gp: Math.max(...rankedPlayers.map(p => p.gp)), 
+        avgK: Math.max(...rankedPlayers.map(p => p.avgK)),
+        avgD: Math.max(...rankedPlayers.map(p => p.avgD)),
+        highestK: Math.max(...rankedPlayers.map(p => p.highestK)), 
+        pqs: Math.max(...rankedPlayers.map(p => p.pqs))
     };
 }
 
@@ -144,12 +150,11 @@ function renderTable() {
     const head = document.getElementById('table-head'); 
     const body = document.getElementById('leaderboard-body');
     
-    // Set Table Headers based on active tab
     head.innerHTML = activeTab === 'kd' ? 
         `<tr><th class="text-center">Rank</th><th>Player</th><th>Kills</th><th>Deaths</th><th class="text-center">KDR</th><th>Wins</th><th>Losses</th><th>WR%</th><th>GP</th><th>Avg K</th><th>Avg D</th><th>Best</th></tr>` :
         `<tr><th class="text-center">Rank</th><th>Player</th><th class="text-center bg-white/5">PQS</th><th>Kills</th><th>KDR</th><th>Wins</th><th>GP</th></tr>`;
     
-    // NEW LOGIC: Separate players into Ranked and Unranked based on Rank ID OR hitting 5 Games Played
+    // logic to move players with 5+ games to ranked list
     const ranked = [...masterData].filter(p => {
         const hasRankId = !p.rankId?.toString().includes('?');
         const hasFiveGames = p.gp >= 5;
@@ -162,7 +167,6 @@ function renderTable() {
         return isUnrankedId && hasLessFiveGames;
     });
 
-    // Render the body
     body.innerHTML = ranked.map((p, i) => generateRowHTML(p, i + 1)).join('') + 
                      `<tr class="bg-white/5"><td colspan="12" class="text-center py-4 text-[10px] font-black tracking-[0.5em] text-white/40">UNRANKED PLACEMENTS</td></tr>` +
                      unranked.map(p => generateRowHTML(p, '?')).join('');
