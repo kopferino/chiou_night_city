@@ -11,6 +11,7 @@
         body { background-color: #0a0a0c; color: #ffffff; font-family: 'Plus Jakarta Sans', sans-serif; -webkit-user-select: none; user-select: none; overflow-x: hidden; }
         .glass { background: rgba(10, 10, 12, 0.7) !important; backdrop-filter: blur(20px); border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; }
         
+        /* Aurora Background */
         .aurora-container { position: fixed; inset: 0; z-index: -1; pointer-events: none; }
         .aurora-glow { 
             position: absolute; top: -10%; right: -5%; width: 65vw; height: 65vw; 
@@ -19,8 +20,10 @@
         }
         @keyframes auroraMove { from { transform: translate(0,0); } to { transform: translate(-10%, 5%); } }
 
+        /* Announcement Glow */
         #announcement-bar { box-shadow: 0 0 25px rgba(255, 70, 85, 0.35); border: 1px solid rgba(255, 70, 85, 0.5); }
 
+        /* Hover Enlargement & Shimmer */
         tr { position: relative; transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1); }
         tr:hover { transform: scale(1.012); background: rgba(255, 255, 255, 0.05) !important; z-index: 10; }
         tr:hover::after {
@@ -30,6 +33,7 @@
         }
         @keyframes shimmer { 0% { left: -150%; } 100% { left: 150%; } }
 
+        /* Icons & Highlighting */
         .rank-cell { text-align: center; width: 110px; vertical-align: middle; }
         .rank-crown { font-size: 3.8rem; filter: drop-shadow(0 0 15px rgba(250, 204, 21, 0.6)); }
         .rank-medal { font-size: 3rem; }
@@ -163,7 +167,7 @@ function generateRowHTML(p, rank) {
             <td class="text-2xl font-black uppercase tracking-tighter">${p.name}${goat}</td>
             <td class="${glow(p.kills, topStats.kills)}">${p.kills}</td>
             <td class="${glow(p.deaths, topStats.deaths)}">${p.deaths}</td>
-            <td class="text-5xl font-black italic text-center ${p.kd<1?'text-green-500':'text-red-500'} ${glow(p.kd, topStats.kd)}">${p.kd.toFixed(3)}</td>
+            <td class="text-5xl font-black italic text-center ${p.kd >= 1 ? 'text-green-500' : 'text-red-500'} ${glow(p.kd, topStats.kd)}">${p.kd.toFixed(3)}</td>
             <td class="text-green-500 font-bold ${glow(p.wins, topStats.wins)}">${p.wins}</td>
             <td class="text-red-500 font-bold ${glow(p.losses, topStats.losses)}">${p.losses}</td>
             <td class="font-bold ${glow(p.wr, topStats.wr)}">${p.wr}</td>
